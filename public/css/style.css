@@ -1,0 +1,25 @@
+@import "grid.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  padding: 50px;
+  margin: 0;
+  font: 19px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.hide {
+  display: none;
+}
+
+.error {
+  color: red;
+}
+
+
