@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import './container.css';
 import Auth from '../auth/auth';
 import { useState } from 'react';
+import ActionButton from '@components/upload/actionBtn';
 
 
 const firstTitle = 'Transfer and have your files travel for free';
@@ -33,6 +34,7 @@ const Container = () => {
             <h1>{firstTitle}</h1>
             <h2>{lowerTitle}</h2>
           </div>
+          {isLoggedIn && <ActionButton />}
         </div>
       </Box>
       <Box className="footer">

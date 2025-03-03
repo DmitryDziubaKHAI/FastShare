@@ -1,5 +1,5 @@
 import { UserDTO } from "../dto/userDTO"; 
-import { User } from "@/domain/models/user.ts";
+import { User } from "../../domain/models/user";
 import { UserRepository } from "@/application/repositories/UserRepository";
 
 

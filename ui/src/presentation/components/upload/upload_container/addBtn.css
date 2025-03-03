@@ -1,0 +1,8 @@
+.wave-button {
+    background-color: #1976d2;
+    color: white;
+}
+
+.wave-button:hover {
+    background-color: #115293;
+}

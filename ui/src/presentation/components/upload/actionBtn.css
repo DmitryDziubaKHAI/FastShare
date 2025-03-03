@@ -1,0 +1,25 @@
+@keyframes shake {
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(-3px, -3px); }
+    40% { transform: translate(3px, 3px); }
+    60% { transform: translate(-3px, 3px); }
+    80% { transform: translate(3px, -3px); }
+    100% { transform: translate(0, 0); }
+}
+
+.shake-on-hover:hover {
+    animation: shake 0.5s ease-in-out 1;
+}
+
+.icon-button {
+    --IconButton-hoverBg: transparent;
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.icon-button:hover {
+    --IconButton-hoverBg: transparent;
+    outline: none;
+    box-shadow: none;
+}
