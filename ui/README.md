@@ -1,3 +1,3 @@
-cd ui
-npm install
-npm run dev
+- cd ui
+- npm install
+- npm run dev
