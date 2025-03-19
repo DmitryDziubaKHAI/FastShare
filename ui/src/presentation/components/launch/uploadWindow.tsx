@@ -2,52 +2,171 @@ import { Box, Button, TextField, IconButton, List, ListItem, ListItemText } from
 import Grid from '@mui/material/Grid';
 import './file_container.css';
 import './addBtn.css';
-import IUploadedWindowProps from "@/application/interfaces/IUploadedWindowProps.ts";
-import * as React from "react";
 import { useRef, useState } from 'react';
-import UndoIcon from '@mui/icons-material/Undo';
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import AddIcon from "@mui/icons-material/Add";
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { handleFileChange, handleAddClick, handleUploadClick, handleDeleteFile, truncateFileName } from './uploadHelper.ts';
-import DownloadModal from './DownloadModal';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import UndoIcon from '@mui/icons-material/Undo';
 
-const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
+interface UploadedWindowProps {
+    onBack: () => void;
+}
+
+const UploadedWindow: React.FC<UploadedWindowProps> = ({ onBack }) => {
     const [files, setFiles] = useState<File[]>([]);
     const [password, setPassword] = useState<string>('');
-    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files) {
+            setFiles(Array.from(event.target.files));
+        }
+    };
+
     const handleClearAllFiles = async () => {
+        
+        setFiles([]);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+
+        
+        if (!password) {
+            return;
+        }
+
+        
+        const confirmDelete = window.confirm(
+            "Do you want to delete all files with this password from the server?\n" +
+            "This action cannot be undone."
+        );
+
+        if (!confirmDelete) {
+            return;
+        }
+
+        const trimmedPassword = password.trim();
+        console.log("Sending password for deletion:", `"${trimmedPassword}"`);
+
         try {
-            const response = await fetch('/clear-files', {
-                method: 'POST',
-                credentials: 'include',
+            const response = await fetch("http://localhost:3000/files", {
+                method: "DELETE",
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ password: trimmedPassword }),
             });
-            
-            if (response.status === 401) {
-                alert('Please login first');
-                return;
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || `Error: ${response.status} ${response.statusText}`);
             }
-            
-            if (response.ok) {
-                setFiles([]);
-                if (isDownloadModalOpen) {
-                    setIsDownloadModalOpen(false);
-                    setTimeout(() => setIsDownloadModalOpen(true), 100);
-                }
+
+            const result = await response.json();
+            alert(`Successfully deleted ${result.count} files from the server`);
+            setPassword(""); 
+        } catch (error) {
+            console.error("Delete error:", error);
+            alert(`Failed to delete files: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    };
+
+    const handleDeleteFile = (index: number) => {
+        setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+    };
+
+    const handleUploadClick = async () => {
+        if (!files.length || !password) {
+            alert("Please select files and enter a password.");
+            return;
+        }
+
+        const trimmedPassword = password.trim();
+
+        const formData = new FormData();
+        formData.append("password", trimmedPassword);
+        files.forEach((file) => formData.append("files", file));
+
+        try {
+            const response = await fetch("http://localhost:3000/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error("Upload failed");
+
+            alert("Files uploaded successfully!");
+            setFiles([]);
+            setPassword("");
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Upload failed");
+        }
+    };
+
+    const handleDownloadClick = async () => {
+        if (!password) {
+            alert("Please enter a password to download files.");
+            return;
+        }
+
+        const trimmedPassword = password.trim();
+        console.log("Sending password:", `"${trimmedPassword}"`);
+
+        try {
+            const response = await fetch("http://localhost:3000/download", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ password: trimmedPassword }),
+            });
+
+            if (!response.ok) {
+                throw new Error("No files found for this password.");
+            }
+
+            const contentType = response.headers.get("Content-Type");
+
+
+            if (contentType && contentType.includes("application/json")) {
+                const filesData: { filename: string; file: string }[] = await response.json();
+
+                filesData.forEach((file: { filename: string; file: string }) => {
+                    const blob = new Blob([Uint8Array.from(atob(file.file), c => c.charCodeAt(0))]);
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = file.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                });
             } else {
-                const data = await response.json();
-                console.error('Failed to clear files:', data.message);
+                // 🔹 Якщо один файл – завантажуємо його окремо
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+
+                const contentDisposition = response.headers.get("Content-Disposition");
+                const fileName = contentDisposition
+                    ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+                    : "downloaded_file";
+
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
             }
         } catch (error) {
-            console.error('Error clearing files:', error);
+            console.error("Download error:", error);
+            alert("Failed to download files.");
         }
     };
 
@@ -58,15 +177,15 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
                     <Grid item xs={12}>
                         <IconButton
                             className="wave-button"
-                            onClick={() => handleAddClick(fileInputRef)}
+                            onClick={() => fileInputRef.current?.click()}
                         >
                             <AddIcon />
                         </IconButton>
-                        
+
                         <input
                             type="file"
                             multiple
-                            onChange={(e) => handleFileChange(e, setFiles)}
+                            onChange={handleFileChange}
                             style={{ display: 'none' }}
                             ref={fileInputRef}
                         />
@@ -74,15 +193,12 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
 
                     <Grid item xs={12}>
                         <TextField
-                            label="Protect files with password"
+                            label="Password for files"
                             type="password"
                             variant="filled"
                             fullWidth
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            InputProps={{
-                                inputProps: { style: { textAlign: "center" } }
-                            }}
                         />
                     </Grid>
 
@@ -91,7 +207,7 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
                             <Button
                                 variant="contained"
                                 startIcon={<CloudUploadIcon />}
-                                onClick={() => handleUploadClick(files, password, setFiles)}
+                                onClick={handleUploadClick}
                                 fullWidth
                             >
                                 Upload files
@@ -101,8 +217,8 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
                             <Button
                                 variant="outlined"
                                 startIcon={<GetAppIcon />}
-                                onClick={() => setIsDownloadModalOpen(true)}
                                 fullWidth
+                                onClick={handleDownloadClick}
                             >
                                 Download files
                             </Button>
@@ -115,7 +231,7 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
                                 onClick={handleClearAllFiles}
                                 fullWidth
                             >
-                                Clear all files
+                                Clear {password ? "& Delete" : ""} Files
                             </Button>
                         </Grid>
                     </Grid>
@@ -135,14 +251,13 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
                                             boxShadow: 3,
                                             borderColor: 'primary.main',
                                         },
-                                        transition: 'box-shadow 0.3s, border-color 0.3s',
                                     }}
                                 >
                                     <ListItem
                                         secondaryAction={
                                             <IconButton
                                                 edge="end"
-                                                onClick={() => handleDeleteFile(index, files, setFiles)}
+                                                onClick={() => handleDeleteFile(index)}
                                                 sx={{
                                                     '&:hover': {
                                                         color: 'error.main',
@@ -155,7 +270,7 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
                                     >
                                         <InsertDriveFileIcon sx={{ marginRight: 2 }} />
                                         <ListItemText
-                                            primary={truncateFileName(file.name, 30)}
+                                            primary={file.name}
                                             secondary={`${(file.size / 1024).toFixed(2)} KB`}
                                             sx={{
                                                 overflow: 'hidden',
@@ -171,29 +286,14 @@ const UploadedWindow: React.FC<IUploadedWindowProps> = ({ onBack }) => {
                     </Grid>
 
                     <Grid item xs={12} sx={{ textAlign: 'center', marginTop: 2 }}>
-                        <IconButton
-                            onClick={onBack}
-                            sx={{
-                                '&:hover': {
-                                    backgroundColor: '#e0e0e0'
-                                }
-                            }}
-                        >
+                        <IconButton onClick={onBack}>
                             <UndoIcon />
                         </IconButton>
                     </Grid>
                 </Grid>
             </Grid>
-
-            <DownloadModal 
-                open={isDownloadModalOpen}
-                onClose={() => setIsDownloadModalOpen(false)}
-            />
         </Box>
     );
 };
 
 export default UploadedWindow;
-
-
-

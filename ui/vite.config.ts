@@ -1,9 +1,7 @@
-// vite.config.js
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-
-const API_URL = 'http://localhost:3000';
 
 export default defineConfig({
   plugins: [react()],
@@ -15,31 +13,6 @@ export default defineConfig({
     }
   },
   server: {
-    proxy: {
-      '/signup': {
-        target: API_URL,
-        changeOrigin: true,
-      },
-      '/login': {
-        target: API_URL,
-        changeOrigin: true,
-      },
-      '/upload': {
-        target: API_URL,
-        changeOrigin: true,
-      },
-      '/files': {
-        target: API_URL,
-        changeOrigin: true,
-      },
-      '/download': {
-        target: API_URL,
-        changeOrigin: true,
-      },
-      '/clear-files': {
-        target: API_URL,
-        changeOrigin: true,
-      }
-    },
+    cors: true, 
   },
 });

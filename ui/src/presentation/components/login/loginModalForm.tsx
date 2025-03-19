@@ -18,38 +18,27 @@ const Login = ({ open, setOpen, onLoginSuccess }: ILoginProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setErrorMessage("Please enter all required fields.");
-      return;
-    }
-
     setIsLoading(true);
     setErrorMessage("");
 
     try {
-      const response = await fetch('/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          email, 
-          password 
-        })
+      const response = await fetch("http://localhost:3000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        mode: "cors",
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        onLoginSuccess(data.user);
-        setOpen(false);
-      } else {
-        setErrorMessage(data.message || "Wrong email or password");
+      if (!response.ok) {
+        throw new Error("Login failed");
       }
+
+      const data = await response.json();
+      onLoginSuccess(data);
+      setOpen(false);
     } catch (error) {
-      console.error('Login error:', error);
-      setErrorMessage("Network error");
+      setErrorMessage("Невірний email або пароль");
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }

@@ -1,0 +1,29 @@
+.file-upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px; /* Рівномірні відступи між блоками */
+    border: 1px solid black;
+}
+
+.file-upload-block {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    border: 1px solid black;
+}
+
+.file-list {
+    text-align: center;
+}
+
+.file-name {
+    font-size: 14px;
+    color: #333;
+    margin: 5px 0;
+}
+
+.clear-button {
+    color: red;
+    cursor: pointer;
+}

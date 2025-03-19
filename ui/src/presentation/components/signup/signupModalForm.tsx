@@ -1,8 +1,5 @@
-import { Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions} from "@mui/material";
-import { useState } from "react";
-import { UserService } from "@/application/services/UserService";   
-import { UserDTO } from "@/application/dto/userDTO"; 
-import { UserRepository } from "@/application/repositories/UserRepository";
+import { Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions } from "@mui/material";
+import { useState } from "react"; 
 import ILoginProps from "@/application/interfaces/ILoginProps";
 
 const Signup = ({ open, setOpen }: ILoginProps) => {
@@ -10,25 +7,24 @@ const Signup = ({ open, setOpen }: ILoginProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const userService = new UserService(new UserRepository());
-
-  const handleSubmit = async () => {
-    const userDTO = new UserDTO(username, email, password);
+  const handleRegister = async () => {
     try {
-      const response = await userService.registerUser(userDTO);
+      const response = await fetch("http://localhost:3000/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+        mode: 'cors'
+      });
 
-      if (response.ok) {
-        alert("Successfully registered!");
-        setOpen(false);
-      } else {
-        alert("Error registering");
+      if (!response.ok) {
+        throw new Error("Failed to register");
       }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        alert("An error occurred: " + error.message);
-      } else {
-        alert("An unknown error occurred.");
-      }
+
+      alert("Registration successful");
+      setOpen(false);
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Registration failed");
     }
   };
 
@@ -61,7 +57,7 @@ const Signup = ({ open, setOpen }: ILoginProps) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setOpen(false)}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained">
+        <Button onClick={handleRegister} variant="contained">
           Register
         </Button>
       </DialogActions>
@@ -70,4 +66,3 @@ const Signup = ({ open, setOpen }: ILoginProps) => {
 };
 
 export default Signup;
-

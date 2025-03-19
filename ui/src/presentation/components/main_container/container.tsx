@@ -2,8 +2,7 @@ import { Box } from '@mui/material';
 import './container.css';
 import Auth from '../auth/auth';
 import { useState } from 'react';
-import ActionButton from '@components/upload/actionBtn';
-
+import ActionButton from "../launch/actionBtn";
 
 const firstTitle = 'Transfer and have your files travel for free';
 const lowerTitle = 'FastShare is a simple and free way to securely share your files and folders.';
@@ -21,37 +20,38 @@ const Container = () => {
   };
 
   return (
-    <Box className="main-container">
-      <Box className="header">
-        <div className="header-logo">
-          <p>{appName}</p>
-        </div>
-        <Auth isLoggedIn={isLoggedIn} onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />
-      </Box>
-      <Box className="container-main">
-        <div className="upload-button-container">
-          <div className="upload-button-text">
-            <h1>{firstTitle}</h1>
-            <h2>{lowerTitle}</h2>
+      <Box className="main-container">
+        <Box className="header">
+          <div className="header-logo">
+            <p>{appName}</p>
           </div>
-          {isLoggedIn && <ActionButton />}
-        </div>
-      </Box>
-      <Box className="footer">
-        <div className="footer-content">
-          <p className="copyright">FastShare © {new Date().getFullYear()}</p>
-          <div className="footer-links">
-            <a href="#privacy">Telegram</a>
-            <a href="#terms">FAQ</a>
+          <Auth isLoggedIn={isLoggedIn} onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />
+        </Box>
+
+        <Box className="container-main">
+          <div className="upload-button-container">
+            <div className="upload-button-text">
+              <h1>{firstTitle}</h1>
+              <h2>{lowerTitle}</h2>
+            </div>
+
+            {isLoggedIn && <ActionButton />}
           </div>
-        </div>
+        </Box>
+
+        <Box className="footer">
+          <div className="footer-content">
+            <p className="copyright">FastShare © {new Date().getFullYear()}</p>
+            <div className="footer-links">
+              <a href="#privacy">Telegram</a>
+              <a href="#terms">FAQ</a>
+            </div>
+          </div>
+        </Box>
       </Box>
-    </Box>
   );
 };
 
 export default Container;
-
-
 
 
