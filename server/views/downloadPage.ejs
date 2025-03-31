@@ -1,0 +1,16 @@
+<h1>Download <%= file.filename %></h1>
+<div class="row">
+    <fieldset class="col-1">
+        <legend>Pssword</legend>
+        <form id="filePasswordForm" method="post">
+            <label>Password: <input type="text" name="password" autocomplete="off"></label><br><br>
+            <% if (isPasswordInvalid) { %>
+                <span style="color: red">Invalid password</span>
+            <% } %>
+            <button type="submit">Download</button>
+        </form>
+        <p id="loginError" class="error hide">Invalid credentials</p>
+    </fieldset>
+</div>
+
+<script src="/js/index.jss" type="application/javascript"></script>
