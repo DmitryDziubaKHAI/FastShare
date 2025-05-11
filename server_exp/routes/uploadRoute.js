@@ -1,38 +1,55 @@
-const express = require('express');
-const multer = require('multer');
-const dbContext = require('../db/DbContext');
+// routes/uploadRoute.js
+const express  = require('express');
+const multer   = require('multer');
+const crypto   = require('crypto');
+const db       = require('../db/DbContext');
+const ensureAuth = require('./ensureAuth');
 
-const router = express.Router();
+const router  = express.Router();
+const upload  = multer({ storage: multer.memoryStorage() });
 
-// Використовуємо multer для обробки файлів (зберігаємо у пам'яті)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+/* визначаємо наявність content_type лише раз */
+let hasContentType = false;
+(async () => {
+  const q = await db.query(`
+    SELECT 1 FROM information_schema.columns
+     WHERE table_name='files' AND column_name='content_type' LIMIT 1
+  `);
+  hasContentType = q.rows.length > 0;
+})();
 
-// 🔹 Тепер маршрут має повний шлях `/upload`
-router.post('/upload', upload.array('files'), async (req, res) => {
-    const { password } = req.body;
-    const files = req.files;
+router.post('/upload', ensureAuth, upload.array('files'), async (req, res) => {
+  const { password } = req.body;
+  const files = req.files ?? [];
 
-    if (!files || files.length === 0 || !password) {
-        return res.status(400).json({ message: 'Files and password are required' });
+  if (!files.length || !password?.trim())
+    return res.status(400).json({ message: 'Files and password required' });
+
+  const pwdHash = crypto.createHash('sha256').update(password.trim()).digest('hex');
+
+  try {
+    for (const f of files) {
+      const filename = Buffer.from(f.originalname, 'latin1').toString('utf8');
+
+      const sql  = hasContentType
+        ? `INSERT INTO files
+           (filename,file,password,user_id,content_type)
+           VALUES ($1,$2,$3,$4,$5)`
+        : `INSERT INTO files
+           (filename,file,password,user_id)
+           VALUES ($1,$2,$3,$4)`;
+
+      const args = hasContentType
+        ? [filename, f.buffer, pwdHash, req.userId, f.mimetype]
+        : [filename, f.buffer, pwdHash, req.userId];
+
+      await db.query(sql, args);
     }
-
-    try {
-        for (const file of files) {
-            const result = await dbContext.query(
-                `INSERT INTO files (filename, file, password) VALUES ($1, $2, $3)`,
-                [file.originalname, file.buffer, password.trim()]
-            );
-            
-            console.log(`File ${file.originalname} uploaded, affected rows: ${result.rowCount}`);
-        }
-
-        res.status(201).json({ message: 'Files uploaded successfully' });
-    } catch (error) {
-        console.error('Database error:', error);
-        res.status(500).json({ message: 'Error saving files to database' });
-    }
+    res.status(201).json({ message: 'Files uploaded successfully' });
+  } catch (e) {
+    console.error('Upload error:', e);
+    res.status(500).json({ message: 'Database error' });
+  }
 });
 
 module.exports = router;
-

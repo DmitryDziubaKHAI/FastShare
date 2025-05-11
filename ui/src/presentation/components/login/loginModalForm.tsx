@@ -10,12 +10,14 @@ import {
   CircularProgress,
 } from "@mui/material";
 import ILoginProps from "@/application/interfaces/ILoginProps";
+import { useAuth } from "@/application/context/AuthContext";
 
-const Login = ({ open, setOpen, onLoginSuccess }: ILoginProps) => {
+const Login = ({ open, setOpen }: ILoginProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -25,8 +27,8 @@ const Login = ({ open, setOpen, onLoginSuccess }: ILoginProps) => {
       const response = await fetch("http://localhost:3000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
-        mode: "cors",
       });
 
       if (!response.ok) {
@@ -34,7 +36,7 @@ const Login = ({ open, setOpen, onLoginSuccess }: ILoginProps) => {
       }
 
       const data = await response.json();
-      onLoginSuccess(data);
+      login(data.user);
       setOpen(false);
     } catch (error) {
       setErrorMessage("Невірний email або пароль");

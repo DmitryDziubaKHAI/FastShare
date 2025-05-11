@@ -1,22 +1,33 @@
-const express = require('express');
-const router = express.Router();
-const userRepository = require('../repositories/UserRepository');
+// routes/registerRoute.js
+const express   = require('express');
+const bcrypt    = require('bcryptjs');
+const router    = express.Router();
+const userRepo  = require('../repositories/UserRepository');
 
 router.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
+  const { username, email, password } = req.body;
 
-    try {
-        const existingUser = await userRepository.getUserByEmail(email);
-        if (existingUser) {
-            return res.status(400).json({ message: 'Email already in use' });
-        }
+  if (!username || !email || !password)
+    return res.status(400).json({ message: 'All fields are required' });
 
-        const newUser = await userRepository.createUser(username, email, password);
-        res.status(201).json({ message: 'User registered successfully', user: newUser });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
+  const gmailRe = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+  if (!gmailRe.test(email))
+    return res.status(400).json({ message: 'Email must be @gmail.com' });
+
+  if (password.length < 5)
+    return res.status(400).json({ message: 'Password length ≥ 5' });
+
+  try {
+    if (await userRepo.getUserByEmail(email))
+      return res.status(400).json({ message: 'Email already in use' });
+
+    const hash = await bcrypt.hash(password, 10);
+    const user = await userRepo.createUser(username, email, hash);
+    res.status(201).json({ message: 'User registered', user });
+  } catch (e) {
+    console.error('Registration error:', e);
+    res.status(500).json({ message: 'Internal error' });
+  }
 });
 
 module.exports = router;

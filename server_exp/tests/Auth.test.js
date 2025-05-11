@@ -1,7 +1,7 @@
 const userRepository = require('../repositories/UserRepository');
 const crypto = require('crypto');
 
-describe('Auth', () => {
+describe('LoginRoute', () => {
     const hash = crypto.createHash('md5')
         .update((new Date()).toISOString())
         .digest('hex');

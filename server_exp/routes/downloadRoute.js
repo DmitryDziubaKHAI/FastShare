@@ -1,45 +1,63 @@
-const express = require('express');
-const dbContext = require('../db/DbContext');
+// routes/downloadRoute.js
+const express  = require('express');
+const crypto   = require('crypto');
+const db       = require('../db/DbContext');
+const ensureAuth = require('./ensureAuth');
 
 const router = express.Router();
 
-router.post('/download', async (req, res) => {
-    const { password } = req.body;
+let hasContentType = false;
+(async () => {
+  const q = await db.query(`
+    SELECT 1 FROM information_schema.columns
+     WHERE table_name='files' AND column_name='content_type' LIMIT 1
+  `);
+  hasContentType = q.rows.length > 0;
+})();
 
-    if (!password) {
-        return res.status(400).json({ message: 'Password is required' });
+const toBuf = b => typeof b === 'string' && b.startsWith('\\x')
+  ? Buffer.from(b.slice(2), 'hex') : b;
+
+const mimeGuess = name =>
+  /\.pdf$/i.test(name)        ? 'application/pdf'  :
+  /\.(png|apng)$/i.test(name) ? 'image/png'        :
+  /\.(jpe?g)$/i.test(name)    ? 'image/jpeg'       :
+  /\.(gif)$/i.test(name)      ? 'image/gif'        :
+  /\.(bmp)$/i.test(name)      ? 'image/bmp'        :
+  /\.(webp)$/i.test(name)     ? 'image/webp'       :
+                                'application/octet-stream';
+
+router.post('/download', ensureAuth, async (req, res) => {
+  const { password } = req.body;
+  if (!password?.trim())
+    return res.status(400).json({ message: 'Password is required' });
+
+  const pwdHash = crypto.createHash('sha256').update(password.trim()).digest('hex');
+
+  const sql = hasContentType
+    ? `SELECT id,filename,file,content_type FROM files WHERE password=$1 ORDER BY uploaded_at DESC`
+    : `SELECT id,filename,file FROM files WHERE password=$1 ORDER BY uploaded_at DESC`;
+
+  try {
+    const { rows } = await db.query(sql, [pwdHash]);
+    if (!rows.length) return res.status(404).json({ message: 'No files found' });
+
+    if (rows.length === 1) {
+      const f   = rows[0];
+      const buf = toBuf(f.file);
+      const mime = hasContentType && f.content_type ? f.content_type : mimeGuess(f.filename);
+      res.setHeader('Content-Type', mime);
+      const enc = encodeURIComponent(f.filename).replace(/['()]/g, c => '%' + c.charCodeAt(0).toString(16));
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${enc}`);
+      return res.send(buf);
     }
 
-    console.log("Received password:", `"${password}"`); 
-
-    try {
-        const result = await dbContext.query(
-            `SELECT filename, file FROM files WHERE TRIM(password) = TRIM($1)`,
-            [password.trim()]
-        );
-
-        console.log("Files found in DB:", result.rows);
-
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'No files found for this password' });
-        }
-
-        if (result.rows.length > 1) {
-            return res.json(result.rows.map(file => ({
-                filename: file.filename,
-                file: file.file.toString('base64')
-            })));
-        } else {
-            // 🔹 Якщо один файл – завантажуємо його окремо
-            const file = result.rows[0];
-            res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
-            res.setHeader('Content-Type', 'application/octet-stream');
-            res.send(Buffer.from(file.file));
-        }
-    } catch (error) {
-        console.error('Download error:', error);
-        res.status(500).json({ message: 'Error retrieving files' });
-    }
+    res.json(rows.map(r => ({ filename: r.filename, file: toBuf(r.file).toString('base64') })));
+  } catch (e) {
+    console.error('Download error:', e);
+    res.status(500).json({ message: 'Error retrieving files' });
+  }
 });
 
 module.exports = router;
+
