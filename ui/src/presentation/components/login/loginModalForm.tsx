@@ -39,7 +39,7 @@ const Login = ({ open, setOpen }: ILoginProps) => {
       login(data.user);
       setOpen(false);
     } catch (error) {
-      setErrorMessage("Невірний email або пароль");
+      setErrorMessage("Wrong login or password");
       console.error("Login error:", error);
     } finally {
       setIsLoading(false);

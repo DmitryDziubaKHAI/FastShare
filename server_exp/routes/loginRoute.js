@@ -5,7 +5,7 @@ const jwt       = require('jsonwebtoken');
 const router    = express.Router();
 const userRepo  = require('../repositories/UserRepository');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
+const JWT_SECRET = 'secret-key';
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -35,8 +35,5 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Internal error' });
   }
 });
-
-module.exports = router;
-
 
 module.exports = router;
