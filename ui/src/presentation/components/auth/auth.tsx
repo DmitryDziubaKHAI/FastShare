@@ -3,13 +3,12 @@ import Login from '../login/loginModalForm';
 import Signup from "../signup/signupModalForm";
 import { useState } from 'react';
 import './auth.css';
-
+import { UserData } from '@/application/interfaces/IUserData';
 interface AuthProps {
   isLoggedIn: boolean;
-  onLoginSuccess: () => void;
+  onLoginSuccess: (user: UserData) => void;  
   onLogout: () => void;
 }
-
 const Auth = ({ isLoggedIn, onLoginSuccess, onLogout }: AuthProps) => {
   const [openLogin, setOpenLogin] = useState(false);
   const [openSignIn, setOpenSignIn] = useState(false);

@@ -15,15 +15,15 @@ class UserRepository {
     return rows[0] || null;
   }
 
-  async createUser (username, email, passwordHash) {
-    const { rows } = await DbContext.query(
-      `INSERT INTO users (username, email, password_hash)
-           VALUES ($1, $2, $3)
-        RETURNING id, username, email`,
-      [username.trim(), email.trim(), passwordHash]
-    );
-    return rows[0];
-  }
+  async createUser({ username, email, passwordHash }) {
+  const { rows } = await DbContext.query(
+    `INSERT INTO users (username, email, password_hash)
+     VALUES ($1, $2, $3)
+     RETURNING id, username, email`,
+    [username.trim(), email.trim(), passwordHash]
+  );
+  return rows[0];
+}
 }
 
 module.exports = new UserRepository();

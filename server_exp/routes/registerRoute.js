@@ -1,32 +1,36 @@
-// routes/registerRoute.js
-const express   = require('express');
-const bcrypt    = require('bcryptjs');
-const router    = express.Router();
-const userRepo  = require('../repositories/UserRepository');
+const express = require('express');
+const router = express.Router();
+const userRepository = require('../repositories/UserRepository');
+
+const bcrypt = require('bcrypt');
 
 router.post('/register', async (req, res) => {
-  const { username, email, password } = req.body;
+  const username = String(req.body?.username || '').trim();
+  const email    = String(req.body?.email || '').trim();
+  const password = String(req.body?.password || '').trim();
 
-  if (!username || !email || !password)
-    return res.status(400).json({ message: 'All fields are required' });
-
-  const gmailRe = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
-  if (!gmailRe.test(email))
-    return res.status(400).json({ message: 'Email must be @gmail.com' });
-
-  if (password.length < 5)
-    return res.status(400).json({ message: 'Password length ≥ 5' });
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: 'Missing fields' });
+  }
 
   try {
-    if (await userRepo.getUserByEmail(email))
-      return res.status(400).json({ message: 'Email already in use' });
+    const existing = await userRepository.getUserByEmail(email);
+    if (existing) {
+      return res.status(409).json({ message: 'Email already registered' });
+    }
 
-    const hash = await bcrypt.hash(password, 10);
-    const user = await userRepo.createUser(username, email, hash);
-    res.status(201).json({ message: 'User registered', user });
-  } catch (e) {
-    console.error('Registration error:', e);
-    res.status(500).json({ message: 'Internal error' });
+    const passwordHash = await bcrypt.hash(password, 10); // 🔐 хешування
+    const newUser = await userRepository.createUser({ username, email, passwordHash });
+
+    req.session.userId = newUser.id;
+
+    return res.status(201).json({
+      message: 'Registration successful',
+      user: { id: newUser.id, email: newUser.email }
+    });
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

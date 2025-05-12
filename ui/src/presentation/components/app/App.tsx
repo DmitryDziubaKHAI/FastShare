@@ -8,10 +8,10 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <AuthProvider>
-        <Container/>
+        <Container />
       </AuthProvider>
     </ThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;

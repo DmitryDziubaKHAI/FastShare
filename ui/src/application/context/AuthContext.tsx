@@ -1,74 +1,65 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface User {
-    id: string;
-    username: string;
-    email: string;
-}
+import { createContext, useContext, useEffect, useState } from 'react';
+import { UserData } from '@/application/interfaces/IUserData';
+ 
 
 interface AuthContextType {
-    user: User | null;
-    isAuthenticated: boolean;
-    login: (userData: User) => void;
-    logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  user: UserData | null;
+  login: (user: UserData) => void;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  user: null,
+  login: () => {},
+  logout: () => {},
+});
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
 
-    useEffect(() => {
-        // Check if user is already authenticated
-        const checkAuth = async () => {
-            try {
-                const response = await fetch('http://localhost:3000/check-auth', {
-                    credentials: 'include'
-                });
-                
-                if (response.ok) {
-                    const userData = await response.json();
-                    setUser(userData.user);
-                    setIsAuthenticated(true);
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-            }
-        };
+  const login = (user: UserData) => {
+    setIsAuthenticated(true);
+    setUser(user);
+  };
 
-        checkAuth();
-    }, []);
+  const logout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    fetch('http://localhost:3000/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+  };
 
-    const login = (userData: User) => {
-        setUser(userData);
-        setIsAuthenticated(true);
-    };
-
-    const logout = async () => {
-        try {
-            await fetch('http://localhost:3000/logout', {
-                method: 'POST',
-                credentials: 'include'
-            });
-            setUser(null);
-            setIsAuthenticated(false);
-        } catch (error) {
-            console.error('Logout failed:', error);
+  useEffect(() => {
+    fetch('http://localhost:3000/check-auth', {
+      method: 'GET',
+      credentials: 'include'
+    })
+      .then(async res => {
+        if (res.ok) {
+          const data = await res.json();
+          setIsAuthenticated(true);
+          setUser({ id: data.userId, email: 'session@local' }); // email не приходить — умовно
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
         }
-    };
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+        setUser(null);
+      });
+  }, []);
 
-    return (
-        <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-}; 
+export const useAuth = () => useContext(AuthContext);
