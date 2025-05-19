@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import ILoginProps from '@/application/interfaces/ILoginProps';
 
 /* ——— util ——— */
-const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+const gmailRegex = /^[a-zA-Z0-9._%+-]+@[a-z0-9.]+\.[a-z0-9]+$/i;
 
 const Signup = ({ open, setOpen }: ILoginProps) => {
   const [username, setUsername] = useState('');
@@ -19,7 +19,7 @@ const Signup = ({ open, setOpen }: ILoginProps) => {
 
   /* --------- валідація полів --------- */
   const emailError    = email && !gmailRegex.test(email)
-    ? 'Must be a valid @gmail.com address'
+    ? 'Must be a valid email address'
     : '';
   const passwordError = password && password.length < 5
     ? 'Password must be ≥ 5 characters'

@@ -22,11 +22,12 @@ router.post('/upload', ensureAuth, upload.array('files'), async (req, res) => {
     const insertedIds = [];
 
     for (const file of files) {
+      const fixedName = Buffer.from(file.originalname, 'latin1').toString('utf-8');
       const result = await db.query(`
         INSERT INTO files (user_id, password, filename, content_type, file)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id
-      `, [userId, pwdHash, file.originalname, file.mimetype, file.buffer]);
+      `, [userId, pwdHash, fixedName, file.mimetype, file.buffer]);
 
       insertedIds.push(result.rows[0].id);
     }
