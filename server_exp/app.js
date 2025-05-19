@@ -10,6 +10,7 @@ const registerRoute = require('./routes/registerRoute');
 const loginRoute = require('./routes/loginRoute');
 const uploadRoute = require('./routes/uploadRoute');
 const downloadRoute = require('./routes/downloadRoute');
+const downloadPageRoute = require('./routes/downloadPageRoute');
 const removeFilesRoute = require('./routes/removeFilesRoute');
 const myFilesRoute = require('./routes/myFilesRoute');
 
@@ -25,11 +26,12 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
+        callback(null, true);
+        // if (!origin || allowedOrigins.includes(origin)) {
+        //     callback(null, true);
+        // } else {
+        //     callback(new Error('Not allowed by CORS'));
+        // }
     },
     credentials: true
 }));
@@ -54,6 +56,7 @@ app.use(registerRoute);
 app.use(loginRoute);
 app.use(uploadRoute);
 app.use(downloadRoute);
+app.use(downloadPageRoute);
 app.use(removeFilesRoute);
 app.use(myFilesRoute);
 
