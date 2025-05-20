@@ -42,7 +42,8 @@ router.post('/downloadPage', async (req, res) => {
     res.status(403).json({message: 'Wrong password'});
     return;
   }
-  if(validate) {
+
+  if(validate === true) {
     res.status(201).json({status: 'OK'});
     return;
   }

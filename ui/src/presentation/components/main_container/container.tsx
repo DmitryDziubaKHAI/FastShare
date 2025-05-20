@@ -1,11 +1,12 @@
 import { Box } from '@mui/material';
 import './container.css';
 import Auth from '../auth/auth';
-import ActionButton from '../launch/actionBtn';
+import Home from '../home/home';
+import DownloadPage from '../downloadPage/downloadPage';
 import { useAuth } from '@/application/context/AuthContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-const firstTitle = 'Transfer and have your files travel for free';
-const lowerTitle = 'FastShare is a simple and free way to securely share your files and folders.';
+
 const appName = 'FastShare';
 
 const Container = () => {
@@ -26,14 +27,12 @@ const Container = () => {
       </Box>
 
       <Box className="container-main">
-        <div className="upload-button-container">
-          <div className="upload-button-text">
-            <h1>{firstTitle}</h1>
-            <h2>{lowerTitle}</h2>
-          </div>
-
-          {isAuthenticated && <ActionButton />}
-        </div>
+          <Router>
+              <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/downloadPage" element={<DownloadPage />} />
+              </Routes>
+          </Router>
       </Box>
 
       <Box className="footer">
